@@ -1,38 +1,62 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { AnimatePresence, motion } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { ArrowLeft } from 'lucide-react';
 
 const OffersViewer = ({ onBack }) => {
+  const STORY_DURATION_MS = 5000;
+
   const offers = useMemo(
     () => [
-      { id: 'offer-1', src: '/logo.png', alt: 'Offer 1' },
-      { id: 'offer-2', src: '/vite.svg', alt: 'Offer 2' },
-      { id: 'offer-3', src: '/background.jpg', alt: 'Offer 3' },
-      { id: 'offer-4', src: '/logo.png', alt: 'Offer 4' },
-      { id: 'offer-5', src: '/vite.svg', alt: 'Offer 5' },
-      { id: 'offer-6', src: '/background.jpg', alt: 'Offer 6' },
+      { id: 'offer-1', src: '/Richeese - Christmas.png', alt: 'Offer 1' },
+      { id: 'offer-2', src: '/Richeese - Hunger Killer.png', alt: 'Offer 2' },
+      { id: 'offer-3', src: '/Richeese - Open Wings.png', alt: 'Offer 3' },
     ],
     []
   );
 
   const [broken, setBroken] = useState(() => new Set());
-  const [selectedOfferId, setSelectedOfferId] = useState(null);
+  const [currentIndex, setCurrentIndex] = useState(0);
 
-  const selectedOffer = useMemo(() => {
-    if (!selectedOfferId) return null;
-    return offers.find((o) => o.id === selectedOfferId) ?? null;
-  }, [offers, selectedOfferId]);
+  const availableOffers = useMemo(
+    () => offers.filter((o) => !broken.has(o.id)),
+    [offers, broken]
+  );
+
+  const currentOffer = availableOffers[currentIndex] ?? null;
+
+  const goNext = () => {
+    if (availableOffers.length === 0) return;
+    setCurrentIndex((prev) => (prev + 1) % availableOffers.length);
+  };
+
+  const goPrev = () => {
+    if (availableOffers.length === 0) return;
+    setCurrentIndex((prev) => (prev - 1 + availableOffers.length) % availableOffers.length);
+  };
 
   useEffect(() => {
-    if (!selectedOfferId) return;
+    if (availableOffers.length === 0) return;
+    if (!currentOffer) return;
 
+    const timer = window.setTimeout(() => {
+      goNext();
+    }, STORY_DURATION_MS);
+
+    return () => window.clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentIndex, availableOffers.length, currentOffer?.id]);
+
+  useEffect(() => {
     const onKeyDown = (e) => {
-      if (e.key === 'Escape') setSelectedOfferId(null);
+      if (e.key === 'Escape') onBack();
+      if (e.key === 'ArrowRight') goNext();
+      if (e.key === 'ArrowLeft') goPrev();
     };
 
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
-  }, [selectedOfferId]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [availableOffers.length]);
 
   return (
     <motion.div
@@ -50,78 +74,78 @@ const OffersViewer = ({ onBack }) => {
         <ArrowLeft size={24} />
       </button>
 
-      <div className="flex-1 w-full h-full overflow-y-auto p-6">
-        <div className="w-full max-w-md mx-auto grid grid-cols-2 gap-4">
-          {offers.map((offer, index) => {
-            const isBroken = broken.has(offer.id);
+      <div className="flex-1 w-full h-full relative">
+        {/* Story progress */}
+        <div className="absolute top-0 left-0 right-0 z-20 p-4 pt-6 pointer-events-none">
+          <div className="flex gap-2">
+            {availableOffers.map((offer, i) => {
+              const isPast = i < currentIndex;
+              const isCurrent = i === currentIndex;
 
-            return (
-              <motion.div
-                key={offer.id}
-                initial={{ opacity: 0, y: 12 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.35, delay: 0.05 * index }}
-                className="rounded-2xl overflow-hidden border border-brand-light/20 bg-white/5"
-              >
-                {isBroken ? (
-                  <div className="w-full aspect-square bg-white/5" />
-                ) : (
-                  <img
-                    src={offer.src}
-                    alt={offer.alt}
-                    loading="lazy"
-                    className="w-full aspect-square object-cover"
-                    role="button"
-                    tabIndex={0}
-                    onClick={() => setSelectedOfferId(offer.id)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' || e.key === ' ') setSelectedOfferId(offer.id);
-                    }}
-                    onError={() =>
-                      setBroken((prev) => {
-                        const next = new Set(prev);
-                        next.add(offer.id);
-                        return next;
-                      })
-                    }
-                  />
-                )}
-              </motion.div>
-            );
-          })}
+              return (
+                <div
+                  key={offer.id}
+                  className="h-1.5 flex-1 rounded-full bg-white/20 overflow-hidden"
+                >
+                  {isPast && <div className="h-full w-full bg-white" />}
+                  {isCurrent && (
+                    <motion.div
+                      key={offer.id}
+                      initial={{ width: '0%' }}
+                      animate={{ width: '100%' }}
+                      transition={{ duration: STORY_DURATION_MS / 1000, ease: 'linear' }}
+                      className="h-full bg-white"
+                    />
+                  )}
+                </div>
+              );
+            })}
+          </div>
         </div>
-      </div>
 
-      <AnimatePresence>
-        {selectedOffer && !broken.has(selectedOffer.id) && (
-          <motion.div
-            key="offer-fullscreen"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.2 }}
-            className="fixed inset-0 z-[60] bg-brand-dark/95 backdrop-blur-xl flex items-center justify-center p-6"
-            onClick={() => setSelectedOfferId(null)}
-            role="dialog"
-            aria-modal="true"
-          >
+        {/* Tap zones */}
+        <button
+          type="button"
+          onClick={goPrev}
+          aria-label="Previous offer"
+          className="absolute inset-y-0 left-0 w-1/2 z-10"
+        />
+        <button
+          type="button"
+          onClick={goNext}
+          aria-label="Next offer"
+          className="absolute inset-y-0 right-0 w-1/2 z-10"
+        />
+
+        {/* Story content */}
+        <div className="absolute inset-0 flex items-center justify-center p-6">
+          {currentOffer ? (
             <motion.div
-              initial={{ scale: 0.98, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.98, opacity: 0 }}
+              key={currentOffer.id}
+              initial={{ opacity: 0, scale: 0.98 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.98 }}
               transition={{ duration: 0.2 }}
               className="w-full h-full max-w-4xl max-h-[90vh] rounded-2xl overflow-hidden border border-brand-light/20 bg-white/5"
-              onClick={(e) => e.stopPropagation()}
             >
               <img
-                src={selectedOffer.src}
-                alt={selectedOffer.alt}
+                src={currentOffer.src}
+                alt={currentOffer.alt}
                 className="w-full h-full object-contain"
+                onError={() =>
+                  setBroken((prev) => {
+                    const next = new Set(prev);
+                    next.add(currentOffer.id);
+                    return next;
+                  })
+                }
               />
             </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+          ) : (
+            <div className="w-full h-full max-w-4xl max-h-[90vh] rounded-2xl border border-brand-light/20 bg-white/5" />
+          )}
+        </div>
+      </div>
     </motion.div>
   );
 };
