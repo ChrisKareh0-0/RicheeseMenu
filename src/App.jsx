@@ -1,17 +1,21 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Utensils, MessageCircle, MapPin, Mail } from 'lucide-react';
+import { Utensils, MessageCircle, MapPin, Mail, Tag } from 'lucide-react';
 import Background from './components/Background';
 import MenuButton from './components/MenuButton';
 import PdfMenuViewer from './components/PdfMenuViewer';
+import OffersViewer from './components/OffersViewer';
 
 function App() {
-  const [view, setView] = useState('home'); // 'home' | 'menu'
+  const [view, setView] = useState('home'); // 'home' | 'menu' | 'offers'
 
   const handleNavigation = (type) => {
     switch (type) {
       case 'menu':
         setView('menu');
+        break;
+      case 'offers':
+        setView('offers');
         break;
       case 'whatsapp':
         window.open('https://wa.me/1234567890', '_blank');
@@ -34,6 +38,13 @@ function App() {
       icon: Utensils,
       color: 'bg-black/80 hover:bg-black/90 border-[#EA580C] text-[#EA580C]',
       action: () => handleNavigation('menu')
+    },
+    {
+      id: 'offers',
+      label: 'Offers',
+      icon: Tag,
+      color: 'bg-black/80 hover:bg-black/90 border-[#EA580C] text-[#EA580C]',
+      action: () => handleNavigation('offers')
     },
     {
       id: 'whatsapp',
@@ -111,14 +122,14 @@ function App() {
               <div className="bg-black/80 border border-[#EA580C] rounded-2xl p-6 backdrop-blur-md">
                 <h3 className="text-[#EA580C] font-bold text-sm uppercase tracking-wider mb-2">Delivery Areas</h3>
                 <p className="text-[#EA580C]/80 text-sm font-light leading-relaxed">
-                  Halat, Fidar, Jbeil, Mastita, Blat, Hboub, Amchit
+                  Tabarja till berbara
                 </p>
               </div>
 
               <div className="bg-black/80 border border-[#EA580C] rounded-2xl p-6 backdrop-blur-md">
                 <h3 className="text-[#EA580C] font-bold text-sm uppercase tracking-wider mb-2">Operating Hours</h3>
                 <p className="text-[#EA580C]/80 text-sm font-light">
-                  9:00 AM - 5:00 PM
+                  12pm to 12am
                 </p>
               </div>
             </motion.div>
@@ -140,6 +151,12 @@ function App() {
       <AnimatePresence>
         {view === 'menu' && (
           <PdfMenuViewer key="pdf-viewer" onBack={() => setView('home')} />
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {view === 'offers' && (
+          <OffersViewer key="offers-viewer" onBack={() => setView('home')} />
         )}
       </AnimatePresence>
 
